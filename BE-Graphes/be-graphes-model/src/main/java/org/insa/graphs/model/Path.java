@@ -25,12 +25,31 @@ public class Path {
      * @return A path that goes through the given list of nodes.
      * @throws IllegalArgumentException If the list of nodes is not valid, i.e. two
      *         consecutive nodes in the list are not connected in the graph.
-     * @deprecated Need to be implemented.
      */
     public static Path createFastestPathFromNodes(Graph graph, List<Node> nodes)
             throws IllegalArgumentException {
         List<Arc> arcs = new ArrayList<Arc>();
-        // TODO:
+        for (int i = 0; i < nodes.size() - 1; i++) {
+            Node current = nodes.get(i);
+            Node next = nodes.get(i + 1);
+
+            if (current.getSuccessors().isEmpty()) {
+                throw new IllegalArgumentException(
+                        "no successor for node : " + current.getId());
+            }
+
+            double plusRapide = 100000;
+            Arc plusRapideArc = null;
+            for (Arc a : current.getSuccessors()) {
+                if (a.getDestination().equals(next)) {
+                    if (a.getMinimumTravelTime() < plusRapide) {
+                        plusRapide = a.getMinimumTravelTime();
+                        plusRapideArc = a;
+                    }
+                }
+            }
+            arcs.add(plusRapideArc);
+        }
         return new Path(graph, arcs);
     }
 
@@ -43,14 +62,34 @@ public class Path {
      * @return A path that goes through the given list of nodes.
      * @throws IllegalArgumentException If the list of nodes is not valid, i.e. two
      *         consecutive nodes in the list are not connected in the graph.
-     * @deprecated Need to be implemented.
      */
     public static Path createShortestPathFromNodes(Graph graph, List<Node> nodes)
             throws IllegalArgumentException {
         List<Arc> arcs = new ArrayList<Arc>();
-        // TODO:
+        for (int i = 0; i < nodes.size() - 1; i++) {
+            Node current = nodes.get(i);
+            Node next = nodes.get(i + 1);
+
+            if (current.getSuccessors().isEmpty()) {
+                throw new IllegalArgumentException(
+                        "no successor for node : " + current.getId());
+            }
+
+            float plusCourt = 100000.0f;
+            Arc plusCourtArc = null;
+            for (Arc a : current.getSuccessors()) {
+                if (a.getDestination().equals(next)) {
+                    if (a.getLength() < plusCourt) {
+                        plusCourt = a.getLength();
+                        plusCourtArc = a;
+                    }
+                }
+            }
+            arcs.add(plusCourtArc);
+        }
         return new Path(graph, arcs);
     }
+
 
     /**
      * Concatenate the given paths.
@@ -184,22 +223,41 @@ public class Path {
      * </ul>
      *
      * @return true if the path is valid, false otherwise.
-     * @deprecated Need to be implemented.
      */
     public boolean isValid() {
-        // TODO:
+        if (this.isEmpty()){
+            return true;
+        }
+        else if (!(this.getOrigin().hasSuccessors())){
+            return true;
+        }
+        else if (this.getArcs().get(0).getOrigin() == this.getOrigin() && 
+        this.getArcs().get(1).getOrigin() == this.getArcs().get(0).getDestination() && 
+        this.getArcs().get(2).getOrigin() == this.getArcs().get(1).getDestination()){
+            return true;
+        }
+        else {
         return false;
+        }
     }
 
     /**
      * Compute the length of this path (in meters).
      *
      * @return Total length of the path (in meters).
-     * @deprecated Need to be implemented.
      */
     public float getLength() {
-        // TODO:
-        return 0;
+        if (!(this.isValid())){
+            return -1;
+        }
+        else{
+            float length = 0.0f;
+            for (Arc a : this.getArcs()) {
+                length += a.getLength();
+            }
+
+        }
+        return length;
     }
 
     /**

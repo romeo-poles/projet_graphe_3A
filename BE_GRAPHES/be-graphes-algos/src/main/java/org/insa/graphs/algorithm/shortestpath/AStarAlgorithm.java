@@ -20,7 +20,8 @@ public class AStarAlgorithm extends DijkstraAlgorithm {
             return new LabelStar(node, 0.0);
         }
 
-        final double birdFlightDistance = Point.distance(node.getPoint(), destination.getPoint());
+        final double birdFlightDistance =
+                Point.distance(node.getPoint(), destination.getPoint());
         double estimatedCost = birdFlightDistance;
 
         if (data.getMode() == Mode.TIME) {

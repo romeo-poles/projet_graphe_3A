@@ -13,6 +13,7 @@ import org.insa.graphs.algorithm.ArcInspector;
 import org.insa.graphs.algorithm.ArcInspectorFactory;
 import org.insa.graphs.model.Arc;
 import org.insa.graphs.model.Graph;
+import org.insa.graphs.model.Node;
 import org.insa.graphs.model.io.BinaryGraphReader;
 import org.insa.graphs.model.io.GraphReader;
 import static org.junit.Assert.assertEquals;
@@ -22,8 +23,9 @@ import static org.junit.Assert.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class AStarAlgorithmTest {
+public class DijkstraAlgorithmTest {
 
+    private static final double EPSILON = 1e-6;
     private static final double MAP_TOLERANCE = 1.0;
 
     private static final int ORIGIN = 1000;
@@ -53,16 +55,11 @@ public class AStarAlgorithmTest {
                 + "Lancez les tests depuis la racine BE-Graphes ou depuis be-graphes-algos.");
     }
 
-    private ShortestPathSolution runDijkstra(ArcInspector inspector) {
-        ShortestPathData data = new ShortestPathData(graph, graph.get(ORIGIN),
-                graph.get(DESTINATION), inspector);
+    private ShortestPathSolution runDijkstra(int origin, int destination,
+            ArcInspector inspector) {
+        ShortestPathData data = new ShortestPathData(graph, graph.get(origin),
+                graph.get(destination), inspector);
         return new DijkstraAlgorithm(data).run();
-    }
-
-    private ShortestPathSolution runAStar(ArcInspector inspector) {
-        ShortestPathData data = new ShortestPathData(graph, graph.get(ORIGIN),
-                graph.get(DESTINATION), inspector);
-        return new AStarAlgorithm(data).run();
     }
 
     private static boolean isPathValid(org.insa.graphs.model.Path path) {
@@ -85,6 +82,14 @@ public class AStarAlgorithmTest {
             }
         }
         return true;
+    }
+
+    private static Node getPathDestination(org.insa.graphs.model.Path path) {
+        List<Arc> arcs = path.getArcs();
+        if (arcs.isEmpty()) {
+            return path.getOrigin();
+        }
+        return arcs.get(arcs.size() - 1).getDestination();
     }
 
     private static double computeLength(org.insa.graphs.model.Path path) {
@@ -119,45 +124,58 @@ public class AStarAlgorithmTest {
     }
 
     @Test
-    public void testAStarMatchesDijkstraOnBelgiumInDistanceMode() {
+    public void testBelgiumMapIsLoadedFromMapsFolder() {
+        assertEquals("BE", graph.getMapId());
+        assertEquals("Belgique", graph.getMapName());
+        assertEquals(1038329, graph.size());
+    }
+
+    @Test
+    public void testDijkstraFindsShortestPathOnBelgiumInDistanceMode() {
         ArcInspector inspector = ArcInspectorFactory.getAllFilters().get(0);
+        ShortestPathSolution solution = runDijkstra(ORIGIN, DESTINATION, inspector);
 
-        ShortestPathSolution dijkstra = runDijkstra(inspector);
-        ShortestPathSolution astar = runAStar(inspector);
-
-        assertOptimalValidPath(dijkstra);
-        assertOptimalValidPath(astar);
-        assertEquals(dijkstra.getStatus(), astar.getStatus());
-        assertEquals(computeLength(dijkstra.getPath()), computeLength(astar.getPath()),
-                MAP_TOLERANCE);
-        assertEquals(computeCost(dijkstra.getPath(), inspector),
-                computeCost(astar.getPath(), inspector), MAP_TOLERANCE);
+        assertOptimalValidPath(solution);
+        assertEquals(graph.get(ORIGIN), solution.getPath().getOrigin());
+        assertEquals(graph.get(DESTINATION), getPathDestination(solution.getPath()));
+        assertEquals(13191.041, computeLength(solution.getPath()), MAP_TOLERANCE);
+        assertEquals(computeLength(solution.getPath()),
+                computeCost(solution.getPath(), inspector), MAP_TOLERANCE);
     }
 
     @Test
-    public void testAStarMatchesDijkstraOnBelgiumInTimeMode() {
+    public void testDijkstraFindsFastestPathOnBelgiumInTimeMode() {
         ArcInspector inspector = ArcInspectorFactory.getAllFilters().get(2);
+        ShortestPathSolution solution = runDijkstra(ORIGIN, DESTINATION, inspector);
 
-        ShortestPathSolution dijkstra = runDijkstra(inspector);
-        ShortestPathSolution astar = runAStar(inspector);
+        assertOptimalValidPath(solution);
+        assertEquals(graph.get(ORIGIN), solution.getPath().getOrigin());
+        assertEquals(graph.get(DESTINATION), getPathDestination(solution.getPath()));
+        assertEquals(19660.322, computeLength(solution.getPath()), MAP_TOLERANCE);
+        assertEquals(862.108, computeMinimumTravelTime(solution.getPath()),
+                MAP_TOLERANCE);
+        assertEquals(computeMinimumTravelTime(solution.getPath()),
+                computeCost(solution.getPath(), inspector), MAP_TOLERANCE);
+    }
 
-        assertOptimalValidPath(dijkstra);
-        assertOptimalValidPath(astar);
-        assertEquals(dijkstra.getStatus(), astar.getStatus());
-        assertEquals(computeMinimumTravelTime(dijkstra.getPath()),
-                computeMinimumTravelTime(astar.getPath()), MAP_TOLERANCE);
-        assertEquals(computeCost(dijkstra.getPath(), inspector),
-                computeCost(astar.getPath(), inspector), MAP_TOLERANCE);
+    
+
+    @Test
+    public void testDijkstraHandlesSameOriginAndDestinationOnBelgiumMap() {
+        ShortestPathSolution solution =
+                runDijkstra(ORIGIN, ORIGIN, ArcInspectorFactory.getAllFilters().get(0));
+
+        assertOptimalValidPath(solution);
+        assertEquals(graph.get(ORIGIN), solution.getPath().getOrigin());
+        assertEquals(graph.get(ORIGIN), getPathDestination(solution.getPath()));
+        assertEquals(0, solution.getPath().getArcs().size());
+        assertEquals(0.0, computeLength(solution.getPath()), EPSILON);
     }
 
     @Test
-    public void testAStarPedestrianFastestPathBetween3420And3421IsInfeasible() {
+    public void testDijkstraPedestrianFastestPathBetween3420And3421IsInfeasible() {
         ArcInspector inspector = ArcInspectorFactory.getAllFilters().get(3);
-
-        ShortestPathData data = new ShortestPathData(graph, graph.get(3420),
-                graph.get(3421), inspector);
-
-        ShortestPathSolution solution = new AStarAlgorithm(data).run();
+        ShortestPathSolution solution = runDijkstra(3420, 3421, inspector);
 
         assertEquals(Status.INFEASIBLE, solution.getStatus());
         assertNull(solution.getPath());

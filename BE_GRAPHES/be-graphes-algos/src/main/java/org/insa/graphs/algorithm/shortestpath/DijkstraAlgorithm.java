@@ -58,7 +58,7 @@ public class DijkstraAlgorithm extends ShortestPathAlgorithm {
             current.setMarked(true);
             notifyNodeMarked(current.getNode());
 
-            for (Arc arc: current.getNode().getSuccessors()) {
+            for (Arc arc : current.getNode().getSuccessors()) {
                 if (!data.isAllowed(arc)) {
                     continue;
                 }
